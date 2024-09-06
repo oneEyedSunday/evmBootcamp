@@ -18,9 +18,9 @@ contract  TokenisedBallot {
 
     constructor(bytes32[] memory _proposalNames, address _tokenContract,
         uint256 _targetBlockNumber) {
+        require(block.number > _targetBlockNumber, "TokemizedBallot: targetBlockNumber isnt in the past");
         tokenContract = IMyToken(_tokenContract);
         targetBlockNumber = _targetBlockNumber;
-        // TODO: Validate if targetBlockNumber is in the past
         //  ERC20Votes lets you keep track of historical voting power
         for (uint i = 0; i < _proposalNames.length; i++) {
             proposals.push(Proposal({name: _proposalNames[i], voteCount: 0}));
