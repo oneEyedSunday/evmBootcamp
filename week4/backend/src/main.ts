@@ -14,7 +14,7 @@ function setupApiDocs(_app: INestApplication<any>) {
     .addTag('web3')
     .build();
   const document = SwaggerModule.createDocument(_app, config);
-  SwaggerModule.setup('api', _app, document);
+  SwaggerModule.setup('api/docs', _app, document);
 }
 
 async function bootstrap() {
