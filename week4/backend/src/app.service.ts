@@ -1,16 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  Address,
   createPublicClient,
   createWalletClient,
   formatEther,
   http,
+  toHex,
+  keccak256,
   PublicClient,
   WalletClient,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import * as tokenJson from './Assets/MyToken.json';
+
+function serializeSafe<T>(data: T): T {
+  return JSON.parse(
+    JSON.stringify(data, (k, v) => {
+      if (typeof v === 'bigint') return v.toString();
+
+      return v;
+    }),
+  );
+}
 
 @Injectable()
 export class AppService {
@@ -62,26 +75,33 @@ export class AppService {
   }
 
   async checkMinterRole(address: string): Promise<boolean> {
-    const MINTER_ROLE = await this.publicClient.readContract({
-      address: this.getContractAddress(),
-      abi: tokenJson.abi,
-      functionName: 'MINTER_ROLE',
-    });
-    const hasRole = await this.publicClient.readContract({
+    const MINTER_ROLE = keccak256(toHex('MINTER_ROLE'));
+    const hasMinterRole = await this.publicClient.readContract({
       address: this.getContractAddress(),
       abi: tokenJson.abi,
       functionName: 'hasRole',
       args: [MINTER_ROLE, address],
     });
-    return hasRole as boolean;
+    return hasMinterRole as boolean;
   }
 
-  getTransactionReceipt(hash: string) {
-    throw new Error('Method not implemented.');
+  async getTransactionReceipt(hash: string) {
+    const txReceipt = await this.publicClient.getTransactionReceipt({
+      hash: hash as Address,
+    });
+
+    return serializeSafe(txReceipt);
   }
 
-  getTokenBalance(address: string) {
-    throw new Error('Method not implemented.');
+  async getTokenBalance(address: string) {
+    const tokenBalance = await this.publicClient.readContract({
+      address: this.getContractAddress(),
+      abi: tokenJson.abi,
+      functionName: 'balanceOf',
+      args: [address as Address],
+    });
+
+    return formatEther(tokenBalance as bigint);
   }
 
   mintTokens(address: string, signature: string) {
