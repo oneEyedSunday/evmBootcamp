@@ -10,10 +10,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
-import * as tokenJson from './Assets/artifact.json';
-
-const tokenJsonAbi =
-  tokenJson.output.contracts['contracts/YourContract.sol'].YourContract.abi;
+import * as tokenJson from './Assets/MyToken.json';
 
 @Injectable()
 export class AppService {
@@ -37,7 +34,9 @@ export class AppService {
   }
 
   getContractAddress(): `0x${string}` {
-    return this.configService.get<string>('TOKEN_ADDRESS') as `0x${string}`;
+    return this.configService.get<string>(
+      'TOKEN_CONTRACT_ADDRESS',
+    ) as `0x${string}`;
   }
 
   getServerWalletAddress(): string {
@@ -47,7 +46,7 @@ export class AppService {
   async getTokenName(): Promise<string> {
     const name = await this.publicClient.readContract({
       address: this.getContractAddress(),
-      abi: tokenJsonAbi,
+      abi: tokenJson.abi,
       functionName: 'name',
     });
     return name as string;
@@ -56,7 +55,7 @@ export class AppService {
   async getTotalSupply() {
     const totalSupply = await this.publicClient.readContract({
       address: this.getContractAddress(),
-      abi: tokenJsonAbi,
+      abi: tokenJson.abi,
       functionName: 'totalSupply',
     });
     return formatEther(totalSupply as bigint);
@@ -65,12 +64,12 @@ export class AppService {
   async checkMinterRole(address: string): Promise<boolean> {
     const MINTER_ROLE = await this.publicClient.readContract({
       address: this.getContractAddress(),
-      abi: tokenJsonAbi,
+      abi: tokenJson.abi,
       functionName: 'MINTER_ROLE',
     });
     const hasRole = await this.publicClient.readContract({
       address: this.getContractAddress(),
-      abi: tokenJsonAbi,
+      abi: tokenJson.abi,
       functionName: 'hasRole',
       args: [MINTER_ROLE, address],
     });
