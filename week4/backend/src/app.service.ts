@@ -10,10 +10,14 @@ import {
   keccak256,
   PublicClient,
   WalletClient,
+  TransactionReceipt,
+  parseEther,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import * as tokenJson from './Assets/MyToken.json';
+import { MintTokenDto } from './Dtos/MintTokenDto';
+import TransactionFailedError from './Errors/TransactionFailedError';
 
 function serializeSafe<T>(data: T): T {
   return JSON.parse(
@@ -104,7 +108,32 @@ export class AppService {
     return formatEther(tokenBalance as bigint);
   }
 
-  mintTokens(address: string, signature: string) {
-    return { result: false };
+  async waitTrxSuccess(trxHash: Address): Promise<TransactionReceipt> {
+    const receipt: TransactionReceipt =
+      await this.publicClient.waitForTransactionReceipt({
+        hash: trxHash,
+      });
+
+    if (receipt?.status !== 'success') {
+      throw new TransactionFailedError(trxHash);
+    }
+
+    return receipt;
+  }
+
+  async mintTokens(mintDto: MintTokenDto) {
+    // @ts-expect-error some issues here with the typings
+    const mintTokenTrx = await this.walletClient.writeContract({
+      address: this.getContractAddress(),
+      abi: tokenJson.abi,
+      functionName: 'mint',
+      args: [mintDto.address, parseEther(mintDto.amount.toString())],
+    });
+
+    await this.waitTrxSuccess(mintTokenTrx);
+
+    return {
+      transactionHash: mintTokenTrx,
+    };
   }
 }

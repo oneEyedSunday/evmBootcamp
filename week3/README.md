@@ -24,3 +24,11 @@ We can successfully vote with another user.
 ## Should get winning proposal
 We can get winning proposal
 ![Screenshot](./screenshots/get_winning_proposal.png)
+
+## Deploying
+
+```shell
+npx hardhat run scripts/DeployWithHardhat.ts  --network sepolia 
+```
+
+Deploying contracts (the `--network sepolia` is key)
