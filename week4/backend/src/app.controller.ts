@@ -11,6 +11,11 @@ export class AppController {
     return { result: await this.appService.getContractAddressFor('token') };
   }
 
+  @Get('ballot-address')
+  async getBallotAddress() {
+    return { result: await this.appService.getContractAddressFor('ballot') };
+  }
+
   @Get('token-name')
   async getTokenName() {
     return { result: await this.appService.getTokenName() };
