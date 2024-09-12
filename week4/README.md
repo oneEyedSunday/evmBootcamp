@@ -10,9 +10,9 @@ Run server, run frontend(dApp)
 
 ![API Get contracts](./screenshots/API_get_contract_address.png)
 
-![API get token name]('./screenshots/API_get_token_name.png)
+![API get token name](./screenshots/API_get_token_name.png)
 
-![API get winning proposal]('./screenshots/API_get_winning_proposal.png)
+![API get winning proposal](./screenshots/API_get_winning_proposal.png)
 
-![Frontend display token information]('./screenshots/UI_token_info.png)
+![Frontend display token information](./screenshots/UI_token_info.png)
 
