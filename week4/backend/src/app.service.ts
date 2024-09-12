@@ -12,11 +12,13 @@ import {
   WalletClient,
   TransactionReceipt,
   parseEther,
+  hexToString,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import * as tokenJson from './Assets/MyToken.json';
-import { MintTokenDto } from './Dtos/MintTokenDto';
+import * as ballotJson from './Assets/TokenisedBallot.json';
+import { MintTokenDto, SelfDelegateDto, VoteDto } from './Dtos';
 import TransactionFailedError from './Errors/TransactionFailedError';
 
 function serializeSafe<T>(data: T): T {
@@ -50,10 +52,15 @@ export class AppService {
     });
   }
 
-  getContractAddress(): `0x${string}` {
-    return this.configService.get<string>(
-      'TOKEN_CONTRACT_ADDRESS',
-    ) as `0x${string}`;
+  getContractAddressFor(contractKey: 'token' | 'ballot'): Address {
+    switch (contractKey) {
+      case 'ballot':
+        return this.configService.get<Address>('BALLOT_CONTRACT_ADDRESS');
+      case 'token':
+        return this.configService.get<Address>('TOKEN_CONTRACT_ADDRESS');
+      default:
+        throw new Error(`contract address for ${contractKey} not found`);
+    }
   }
 
   getServerWalletAddress(): string {
@@ -62,7 +69,7 @@ export class AppService {
 
   async getTokenName(): Promise<string> {
     const name = await this.publicClient.readContract({
-      address: this.getContractAddress(),
+      address: this.getContractAddressFor('token'),
       abi: tokenJson.abi,
       functionName: 'name',
     });
@@ -71,7 +78,7 @@ export class AppService {
 
   async getTotalSupply() {
     const totalSupply = await this.publicClient.readContract({
-      address: this.getContractAddress(),
+      address: this.getContractAddressFor('token'),
       abi: tokenJson.abi,
       functionName: 'totalSupply',
     });
@@ -81,7 +88,7 @@ export class AppService {
   async checkMinterRole(address: string): Promise<boolean> {
     const MINTER_ROLE = keccak256(toHex('MINTER_ROLE'));
     const hasMinterRole = await this.publicClient.readContract({
-      address: this.getContractAddress(),
+      address: this.getContractAddressFor('token'),
       abi: tokenJson.abi,
       functionName: 'hasRole',
       args: [MINTER_ROLE, address],
@@ -99,7 +106,7 @@ export class AppService {
 
   async getTokenBalance(address: string) {
     const tokenBalance = await this.publicClient.readContract({
-      address: this.getContractAddress(),
+      address: this.getContractAddressFor('token'),
       abi: tokenJson.abi,
       functionName: 'balanceOf',
       args: [address as Address],
@@ -108,7 +115,7 @@ export class AppService {
     return formatEther(tokenBalance as bigint);
   }
 
-  async waitTrxSuccess(trxHash: Address): Promise<TransactionReceipt> {
+  private async waitTrxSuccess(trxHash: Address): Promise<TransactionReceipt> {
     const receipt: TransactionReceipt =
       await this.publicClient.waitForTransactionReceipt({
         hash: trxHash,
@@ -124,7 +131,7 @@ export class AppService {
   async mintTokens(mintDto: MintTokenDto) {
     // @ts-expect-error some issues here with the typings
     const mintTokenTrx = await this.walletClient.writeContract({
-      address: this.getContractAddress(),
+      address: this.getContractAddressFor('token'),
       abi: tokenJson.abi,
       functionName: 'mint',
       args: [mintDto.address, parseEther(mintDto.amount.toString())],
@@ -135,5 +142,67 @@ export class AppService {
     return {
       transactionHash: mintTokenTrx,
     };
+  }
+
+  async selfDelegate(selfDelegateDto: SelfDelegateDto) {
+    // @ts-expect-error some issues here with the typings
+    const selfDelegationTx = await this.walletClient.writeContract({
+      address: this.getContractAddressFor('token'),
+      abi: tokenJson.abi,
+      functionName: 'delegate',
+      args: [selfDelegateDto.address],
+    });
+
+    try {
+      await this.waitTrxSuccess(selfDelegationTx);
+
+      return {
+        message: 'Delegation successful',
+        success: true,
+      };
+    } catch {
+      return {
+        message: 'Delegation failed',
+        success: false,
+      };
+    }
+  }
+
+  async vote(voteDto: VoteDto) {
+    // @ts-expect-error some issues here with the typings
+    const voteTx = await this.walletClient.writeContract({
+      address: this.getContractAddressFor('ballot'),
+      abi: ballotJson.abi,
+      functionName: 'vote',
+      args: [voteDto.proposalIndex, voteDto.amount],
+    });
+
+    try {
+      await this.waitTrxSuccess(voteTx);
+
+      return {
+        message: 'Voting successful',
+        success: true,
+      };
+    } catch {
+      return {
+        message: 'Voting failed',
+        success: false,
+      };
+    }
+  }
+
+  async getWinner() {
+    const winner = await this.publicClient.readContract({
+      address: this.getContractAddressFor('ballot'),
+      abi: ballotJson.abi,
+      functionName: 'winnerName',
+    });
+
+    const winnerName = hexToString(winner as any, { size: 32 });
+
+    console.log(`original result: ${winner}, parsed result: ${winnerName}`);
+
+    return winnerName;
   }
 }

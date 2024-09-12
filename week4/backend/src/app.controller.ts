@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, Body, Post } from '@nestjs/common';
 import { AppService } from './app.service';
-import { MintTokenDto } from './Dtos/MintTokenDto';
+import { MintTokenDto, SelfDelegateDto, VoteDto } from './Dtos';
 
 @Controller('api')
 export class AppController {
@@ -8,7 +8,7 @@ export class AppController {
 
   @Get('contract-address')
   async getContractAddress() {
-    return { result: await this.appService.getContractAddress() };
+    return { result: await this.appService.getContractAddressFor('token') };
   }
 
   @Get('token-name')
@@ -45,6 +45,27 @@ export class AppController {
   async mintTokens(@Body() body: MintTokenDto) {
     return {
       result: await this.appService.mintTokens(body),
+    };
+  }
+
+  @Post('self-delegate')
+  async selfDelegate(@Body() body: SelfDelegateDto) {
+    return {
+      result: await this.appService.selfDelegate(body),
+    };
+  }
+
+  @Post('vote')
+  async voteForAProposal(@Body() body: VoteDto) {
+    return {
+      result: await this.appService.vote(body),
+    };
+  }
+
+  @Get('winning-proposal')
+  async getWinner() {
+    return {
+      result: await this.appService.getWinner(),
     };
   }
 }
