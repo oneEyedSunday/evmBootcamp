@@ -20,13 +20,12 @@ async function main() {
     const tokenName = "LolzToken";
     const tokenSymbol = "LoL";
     // deploy lotterToken
-    const { contract: lotteryTokenContract, deployer } = await deployContract("LotteryToken", [tokenName, tokenSymbol]);
+    // const { contract: lotteryTokenContract, deployer } = await deployContract("LotteryToken", [tokenName, tokenSymbol]);
 
-    console.log(`Deployed lotteryToken contract to ${lotteryTokenContract.address} by ${deployer.account.address}`);
+    // console.log(`Deployed lotteryToken contract to ${lotteryTokenContract.address} by ${deployer.account.address}`);
 
     const { contract: lotteryContract, deployer: lotteryDeployer } = await deployContract("Lottery", [
-        tokenName,
-        tokenSymbol,
+        "0x272807a00e4e31ba6b78e3b42ec58457b6f34193",
         10000n, 5n, 1n,
     ]);
 
